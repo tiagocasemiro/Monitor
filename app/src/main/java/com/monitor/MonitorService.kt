@@ -3,7 +3,6 @@ package com.monitor
 import android.app.IntentService
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -11,16 +10,20 @@ import android.os.BatteryManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import java.util.*
+
 
 class MonitorService: IntentService("MonitorService") {
-    lateinit var receiver: BroadcastReceiver
-        override fun onHandleIntent(intent: Intent?) {
-        receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
+    private val timer = Timer()
+
+    override fun onHandleIntent(intent: Intent?) {
+        val period = MainActivity.intervalInMinutes
+        val timerTask = object : TimerTask() {
+            override fun run() {
                 sendNotification()
             }
         }
-        registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        timer.schedule(timerTask, 1, period)
     }
 
     private fun getBatteryLevel(): Float {
@@ -52,6 +55,8 @@ class MonitorService: IntentService("MonitorService") {
             cancel(id)
             notify(id, builder.build())
         }
+
+        println("Notificacao com level $level")
     }
 
     private fun createNotificationChannel(name: String, CHANNEL_ID: String ) {
@@ -68,6 +73,6 @@ class MonitorService: IntentService("MonitorService") {
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(receiver)
+        timer.cancel()
     }
 }
